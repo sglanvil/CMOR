@@ -2,21 +2,15 @@
 
 clear; clc; close all;
 
+% ---------------------- USER SPECIFY ----------------------
+inVarName='OMEGA';
+outVarName='Wzm';
 inDir="/glade/scratch/strandwg/QBOI/waccm-SC.QBOi.EXP2.LA.001/atm/proc/tseries/month_1/";
 outDir="/glade/scratch/sglanvil/QBOi/data/";
-
-OMEGAfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.OMEGA.197901-208001.nc";
-Ufile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.U.197901-208001.nc";
-Vfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.V.197901-208001.nc";
+fileName=inDir+"waccm-SC.QBOi.EXP2.LA.001.cam.h0."+inVarName+".197901-208001.nc";
+outFile="waccm-SC.QBOi.EXP2.LA.001.cam.h0."+outVarName+".197901-208001.nc";
 PSfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.PS.197901-208001.nc";
 PSLfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.PSL.197901-208001.nc";
-P0=1000;
-
-% ---------------------- USER SPECIFY ----------------------
-fileName=inDir+Ufile;
-varIn=ncread(fileName,'U');
-outFile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.Uzm.197901-208001.nc";
-% also specify var name (Uzm) in netcdf creation (end of script)
 
 lon=ncread(fileName,'lon');
 lat=ncread(fileName,'lat');
@@ -28,7 +22,9 @@ hyam=permute(repmat(ncread(fileName,'hyam'),1,length(lon),length(lat)),[2 3 1]);
 hybm=permute(repmat(ncread(fileName,'hybm'),1,length(lon),length(lat)),[2 3 1]);
 PSin=ncread(inDir+PSfile,'PS');
 PSin=permute(repmat(PSin,1,1,1,length(lev)),[1 2 4 3]);
+P0=1000;
 
+varIn=ncread(fileName,inVarName);
 varZM=NaN(length(lat),length(ilev),length(time)); % allocate space
 for itime=1:length(time)
     itime
@@ -44,6 +40,13 @@ for itime=1:length(time)
     end
     varZM(:,:,itime)=squeeze(mean(varOut,1,'omitnan'));
 end
+
+if strcmp(inVarName,'OMEGA')==1
+    ilevRep=100*permute(repmat(ilev,1,length(lat),length(time)),[2 1 3]);
+    varZM=-varZM.*7000./ilevRep;
+end
+
+%%
 
 ncName=sprintf(outDir+outFile);
 cmode = netcdf.getConstant('NETCDF4');
@@ -61,7 +64,7 @@ lat_ID=netcdf.defVar(ncid,'lat','double',[dimidlat]);
 lev_ID=netcdf.defVar(ncid,'lev','double',[dimidlev]);
 ilev_ID=netcdf.defVar(ncid,'ilev','double',[dimidilev]);
 time_ID=netcdf.defVar(ncid,'time','double',[dimidtime]);
-var_ID=netcdf.defVar(ncid,'Vzm','float',[dimidlat dimidilev dimidtime]);
+var_ID=netcdf.defVar(ncid,outVarName,'float',[dimidlat dimidilev dimidtime]);
 netcdf.endDef(ncid);
 %Then store the dimension variables in
 netcdf.putVar(ncid,lon_ID,lon);
