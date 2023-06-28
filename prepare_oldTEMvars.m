@@ -2,15 +2,15 @@
 
 clear; clc; close all;
 
-% ---------------------- USER SPECIFY ----------------------
-inVarName='OMEGA';
-outVarName='Wzm';
+% ---------------------- USER SPECIFY BEGIN ----------------------
+inVarName='VTH3d';
+outVarName='VTHzm';
 inDir="/glade/scratch/strandwg/QBOI/waccm-SC.QBOi.EXP2.LA.001/atm/proc/tseries/month_1/";
 outDir="/glade/scratch/sglanvil/QBOi/data/";
 fileName=inDir+"waccm-SC.QBOi.EXP2.LA.001.cam.h0."+inVarName+".197901-208001.nc";
 outFile="waccm-SC.QBOi.EXP2.LA.001.cam.h0."+outVarName+".197901-208001.nc";
 PSfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.PS.197901-208001.nc";
-PSLfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.PSL.197901-208001.nc";
+% ---------------------- USER SPECIFY END ----------------------
 
 lon=ncread(fileName,'lon');
 lat=ncread(fileName,'lat');
@@ -18,36 +18,45 @@ lev=ncread(fileName,'lev');
 ilev=ncread(fileName,'ilev');
 time=ncread(fileName,'time');
 date=ncread(fileName,'date');
-hyam=permute(repmat(ncread(fileName,'hyam'),1,length(lon),length(lat)),[2 3 1]);
-hybm=permute(repmat(ncread(fileName,'hybm'),1,length(lon),length(lat)),[2 3 1]);
-PSin=ncread(inDir+PSfile,'PS');
-PSin=permute(repmat(PSin,1,1,1,length(lev)),[1 2 4 3]);
-P0=1000;
 
 varIn=ncread(fileName,inVarName);
 varZM=NaN(length(lat),length(ilev),length(time)); % allocate space
-for itime=1:length(time)
-    itime
-    var0=squeeze(varIn(:,:,:,itime));
-    PS0=squeeze(PSin(:,:,:,itime));    
-    hybp=(hyam.*P0+hybm.*PS0)./100;
-    varOut=NaN(length(lon),length(lat),length(ilev));
-    for ilat=1:length(lat)
-        for ilon=1:length(lon)
-            varOut(ilon,ilat,:)=interp1(squeeze(hybp(ilon,ilat,:)),...
-                squeeze(var0(ilon,ilat,:)),ilev);
+
+if size(varIn,3)==length(lev)
+    disp('<<< this variable is not on ilev...interpolating >>>')
+    hyam=permute(repmat(ncread(fileName,'hyam'),1,length(lon),length(lat)),[2 3 1]);
+    hybm=permute(repmat(ncread(fileName,'hybm'),1,length(lon),length(lat)),[2 3 1]);
+    PSin=ncread(inDir+PSfile,'PS');
+    PSin=permute(repmat(PSin,1,1,1,length(lev)),[1 2 4 3]);
+    P0=1000;
+    for itime=1:length(time)
+        itime
+        var0=squeeze(varIn(:,:,:,itime));
+        PS0=squeeze(PSin(:,:,:,itime));    
+        hybp=(hyam.*P0+hybm.*PS0)./100;
+        varOut=NaN(length(lon),length(lat),length(ilev));
+        for ilat=1:length(lat)
+            for ilon=1:length(lon)
+                varOut(ilon,ilat,:)=interp1(squeeze(hybp(ilon,ilat,:)),...
+                    squeeze(var0(ilon,ilat,:)),ilev);
+            end
         end
+        varZM(:,:,itime)=squeeze(mean(varOut,1,'omitnan'));
     end
-    varZM(:,:,itime)=squeeze(mean(varOut,1,'omitnan'));
+end
+
+if size(varIn,3)==length(ilev)
+    disp('<<< this variable is already on ilev...calcuating zonal mean >>>')
+    varZM=mean(varIn,1,'omitnan');
 end
 
 if strcmp(inVarName,'OMEGA')==1
+    disp('<<< this is OMEGA...calculating W >>>')
     ilevRep=100*permute(repmat(ilev,1,length(lat),length(time)),[2 1 3]);
     varZM=-varZM.*7000./ilevRep;
 end
 
 %%
-
 ncName=sprintf(outDir+outFile);
 cmode = netcdf.getConstant('NETCDF4');
 cmode = bitor(cmode,netcdf.getConstant('CLASSIC_MODEL'));
