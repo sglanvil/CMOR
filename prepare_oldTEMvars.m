@@ -2,14 +2,17 @@
 
 clear; clc; close all;
 
+% {'U' 'V' 'OMEGA' 'VTH3d' 'UV3d' 'UW3d' 'TH'};
+% {'Uzm' 'Vzm' 'Wzm' 'VTHzm' 'UVzm' 'UWzm' 'THzm'};
+
 % ---------------------- USER SPECIFY BEGIN ----------------------
-inVarName='VTH3d';
-outVarName='VTHzm';
-inDir="/glade/scratch/strandwg/QBOI/waccm-SC.QBOi.EXP2.LA.001/atm/proc/tseries/month_1/";
+inVarName='U';
+outVarName='Uzm';
+inDir="/glade/scratch/strandwg/QBOI/waccm-SC.QBOi.EXP2.EL.001/atm/proc/tseries/month_1/";
 outDir="/glade/scratch/sglanvil/QBOi/data/";
-fileName=inDir+"waccm-SC.QBOi.EXP2.LA.001.cam.h0."+inVarName+".197901-208001.nc";
-outFile="waccm-SC.QBOi.EXP2.LA.001.cam.h0."+outVarName+".197901-208001.nc";
-PSfile="waccm-SC.QBOi.EXP2.LA.001.cam.h0.PS.197901-208001.nc";
+fileName=inDir+"waccm-SC.QBOi.EXP2.EL.001.cam.h0."+inVarName+".197901-208001.nc";
+outFile="waccm-SC.QBOi.EXP2.EL.001.cam.h0."+outVarName+".197901-208001.nc";
+PSfile="waccm-SC.QBOi.EXP2.EL.001.cam.h0.PS.197901-208001.nc";
 % ---------------------- USER SPECIFY END ----------------------
 
 lon=ncread(fileName,'lon');
@@ -18,7 +21,6 @@ lev=ncread(fileName,'lev');
 ilev=ncread(fileName,'ilev');
 time=ncread(fileName,'time');
 date=ncread(fileName,'date');
-
 varIn=ncread(fileName,inVarName);
 varZM=NaN(length(lat),length(ilev),length(time)); % allocate space
 
@@ -30,7 +32,7 @@ if size(varIn,3)==length(lev)
     PSin=permute(repmat(PSin,1,1,1,length(lev)),[1 2 4 3]);
     P0=1000;
     for itime=1:length(time)
-        itime
+        disp(itime)
         var0=squeeze(varIn(:,:,:,itime));
         PS0=squeeze(PSin(:,:,:,itime));    
         hybp=(hyam.*P0+hybm.*PS0)./100;
@@ -56,7 +58,7 @@ if strcmp(inVarName,'OMEGA')==1
     varZM=-varZM.*7000./ilevRep;
 end
 
-%%
+%Save .nc file
 ncName=sprintf(outDir+outFile);
 cmode = netcdf.getConstant('NETCDF4');
 cmode = bitor(cmode,netcdf.getConstant('CLASSIC_MODEL'));
