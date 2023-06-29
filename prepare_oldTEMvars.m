@@ -6,10 +6,10 @@ clear; clc; close all;
 % {'Uzm' 'Vzm' 'Wzm' 'VTHzm' 'UVzm' 'UWzm' 'THzm'};
 
 % ---------------------- USER SPECIFY BEGIN ----------------------
-inVarName='U';
-outVarName='Uzm';
+inVarName='TH';
+outVarName='THzm';
 inDir="/glade/scratch/strandwg/QBOI/waccm-SC.QBOi.EXP2.EL.001/atm/proc/tseries/month_1/";
-outDir="/glade/scratch/sglanvil/QBOi/data/";
+outDir="/glade/scratch/sglanvil/QBOi/data/waccm-SC.QBOi.EXP2.EL.001/atm/proc/tseries/month_1/";
 fileName=inDir+"waccm-SC.QBOi.EXP2.EL.001.cam.h0."+inVarName+".197901-208001.nc";
 outFile="waccm-SC.QBOi.EXP2.EL.001.cam.h0."+outVarName+".197901-208001.nc";
 PSfile="waccm-SC.QBOi.EXP2.EL.001.cam.h0.PS.197901-208001.nc";
@@ -20,6 +20,9 @@ lat=ncread(fileName,'lat');
 lev=ncread(fileName,'lev');
 ilev=ncread(fileName,'ilev');
 time=ncread(fileName,'time');
+time_bnds=ncread(fileName,'time_bnds');
+timeUnits=ncreadatt(fileName,'time','units');
+
 date=ncread(fileName,'date');
 varIn=ncread(fileName,inVarName);
 varZM=NaN(length(lat),length(ilev),length(time)); % allocate space
@@ -59,7 +62,7 @@ if strcmp(inVarName,'OMEGA')==1
 end
 
 %Save .nc file
-ncName=sprintf(outDir+outFile);
+ncName = sprintf(outDir+outFile);
 cmode = netcdf.getConstant('NETCDF4');
 cmode = bitor(cmode,netcdf.getConstant('CLASSIC_MODEL'));
 ncid = netcdf.create(ncName,cmode);
@@ -84,6 +87,8 @@ netcdf.putVar(ncid,lev_ID,lev);
 netcdf.putVar(ncid,ilev_ID,ilev);
 netcdf.putVar(ncid,time_ID,0,length(time),time);
 netcdf.putVar(ncid,var_ID,varZM);
+netcdf.reDef(ncid)
+netcdf.putAtt(ncid,time_ID,'units',timeUnits);
 netcdf.close(ncid)
 
 % date_ID=netcdf.defVar(ncid,'date','int',[dimidtime]);
